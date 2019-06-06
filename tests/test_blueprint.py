@@ -53,7 +53,7 @@ class TestBlueprint():
         api.register_blueprint(blp)
         spec = api.spec.to_dict()
         get = spec['paths']['/test/']['get']
-        if openapi_location != 'body' or openapi_version == '2.0':
+        if openapi_location not in ['body', 'formData'] or openapi_version == '2.0':
             loc = get['parameters'][0]['in']
             assert loc == openapi_location
             assert 'requestBody' not in get
@@ -113,7 +113,7 @@ class TestBlueprint():
 
         api.register_blueprint(blp)
         get = api.spec.to_dict()['paths']['/test/']['get']
-        if location == 'json':
+        if location == 'json' or location == 'form':
             if openapi_version == '2.0':
                 parameters = get['parameters']
                 # One parameter: the schema

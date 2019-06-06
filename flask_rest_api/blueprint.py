@@ -50,6 +50,11 @@ from .pagination import PaginationMixin
 from .etag import EtagMixin
 
 
+BODY_LOCATION_AND_MIMETYPE_MAP = {
+    'body': 'application/json',
+    'formData': 'application/x-www-form-urlencoded',
+}
+
 class Blueprint(
         FlaskBlueprint,
         ArgumentsMixin, ResponseMixin, PaginationMixin, EtagMixin):
@@ -57,6 +62,7 @@ class Blueprint(
 
     # Order in which the methods are presented in the spec
     HTTP_METHODS = ['OPTIONS', 'HEAD', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+
 
     def __init__(self, *args, **kwargs):
 
@@ -216,17 +222,19 @@ class Blueprint(
                             ) = resp.pop(field)
             if 'parameters' in operation:
                 for param in operation['parameters']:
-                    if param['in'] == 'body':
+                    location = param['in']
+                    if location in BODY_LOCATION_AND_MIMETYPE_MAP.keys():
                         request_body = {
                             x: param[x] for x in ('description', 'required')
                             if x in param
                         }
                         for field in ('schema', 'example', 'examples'):
                             if field in param:
+                                mime_type = BODY_LOCATION_AND_MIMETYPE_MAP[location]
                                 (
                                     request_body
                                     .setdefault('content', {})
-                                    .setdefault('application/json', {})
+                                    .setdefault(mime_type, {})
                                     [field]
                                 ) = param.pop(field)
                         operation['requestBody'] = request_body
@@ -234,7 +242,7 @@ class Blueprint(
                         continue
                 parameters = [
                     param for param in operation['parameters']
-                    if not param['in'] == 'body'
+                    if not (location in BODY_LOCATION_AND_MIMETYPE_MAP.keys())
                 ]
                 if parameters:
                     operation['parameters'] = parameters
